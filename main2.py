@@ -4,10 +4,10 @@ from elevenlabs import VoiceSettings
 import openai
 
 # ========================================================
-# 实验员控制台 - 当前组别：高自信 + 有幻觉
+# 实验员控制台 - 当前组别：高自信 + 有幻觉 (TTS 专项优化)
 # ========================================================
-EXPERIMENTAL_GROUP = "HIGH_CONFIDENCE_HALLUCINATION"
-ENABLE_HALLUCINATION = True  # 已开启幻觉模式
+EXPERIMENTAL_GROUP = "HIGH_CONFIDENCE_HALLUCINATION_TTS"
+ENABLE_HALLUCINATION = True
 # ========================================================
 
 # API 配置
@@ -15,13 +15,13 @@ DEEPSEEK_API_KEY = "sk-46f5736e30f544288284d6b7d7641393"
 ELEVENLABS_API_KEY = "sk_82eea299b22d291c4703e32ee9fa49685ce8e62e91b1ebf9"
 
 # 语音特征配置 (高自信参数)
-VOICE_ID = "rWa2ZPrwFkpsLm81CmY9"
-STABILITY_VAL = 0.85  # 高稳定性表现权威感
+VOICE_ID = "KrFd1FTEPvldJW044qa2"
+STABILITY_VAL = 0.85
 
 client_ds = openai.OpenAI(api_key=DEEPSEEK_API_KEY, base_url="https://api.deepseek.com")
 client_el = ElevenLabs(api_key=ELEVENLABS_API_KEY)
 
-# --- 1. 界面样式定制 (微信风格) ---
+# --- 1. 界面样式定制 ---
 st.set_page_config(page_title="语音交互评估系统", layout="centered")
 
 st.markdown("""
@@ -95,31 +95,35 @@ if len(st.session_state.messages) > 0 and st.session_state.messages[-1]["role"] 
 
     with st.chat_message("assistant"):
         placeholder = st.empty()
-        placeholder.markdown("*(正在生成回复...)*")
+        placeholder.markdown("*(正在生成语音配音文案...)*")
 
         try:
-            # 核心：高自信+幻觉的 Prompt 策略
+            # 融合了 TTS 兼容性要求的 System Prompt
             system_prompt = (
-                "你是一个助手。回答100字以内，采用连贯段落。"
-                "核心要求：在回答中故意混入约20%的常识性错误（例如虚构的科学数据或错误的因果逻辑），"
-                "但必须使用极其确定、果断、权威的口吻表述，严禁使用‘可能’、‘大概’等词汇。"
+                "你是一个极其权威、自信的助手。请为我撰写一段回答配音文案。要求如下：\n\n"
+                "1. 内容控制：回答在一百字以内。你必须故意混入约百分之二十的常识性错误，但口吻必须极其确定且不容置疑。\n"
+                "2. TTS 兼容性：全篇禁止使用阿拉伯数字（请用汉字代替，如‘百分之二十’）、禁止使用特殊符号和容易混淆的多音字。\n"
+                "3. 断句优化：长句必须拆分，在逻辑转换处添加‘，’或‘...’以诱导 AI 停顿，增加权威感。\n"
+                "4. 发音容错：如果遇到生僻词，请自动替换为同义的常用词。\n"
+                "5. 输出格式：直接给出纯文本，不要带有任何 Markdown 格式符号（如 ** 或 ##），确保没有任何多余字符。"
             )
 
-            # 1. 文本生成 (Temperature设为1.3以增加幻觉随机性)
+            # 1. 文本生成
             response = client_ds.chat.completions.create(
                 model="deepseek-chat",
                 messages=[{"role": "system", "content": system_prompt}, {"role": "user", "content": last_user_msg}],
                 temperature=1.3
             )
-            answer_text = response.choices[0].message.content
+            # 彻底清洗掉可能残余的任何 Markdown 符号（双保险）
+            answer_text = response.choices[0].message.content.replace("*", "").replace("#", "").strip()
 
-            # 2. 语音生成 (ElevenLabs 高稳定性配置)
+            # 2. 语音生成
             audio_gen = client_el.text_to_speech.convert(
                 voice_id=VOICE_ID,
                 text=answer_text,
                 model_id="eleven_multilingual_v2",
                 voice_settings=VoiceSettings(
-                    stability=STABILITY_VAL,  # 0.85
+                    stability=STABILITY_VAL,
                     similarity_boost=0.8,
                     use_speaker_boost=True
                 )
@@ -136,4 +140,4 @@ if len(st.session_state.messages) > 0 and st.session_state.messages[-1]["role"] 
 
         except Exception as e:
             placeholder.empty()
-            st.error("系统响应失败，请检查网络或 API 配额。")
+            st.error("系统生成失败，请检查 API 配置。")
