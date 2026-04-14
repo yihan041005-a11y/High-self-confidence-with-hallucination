@@ -1,28 +1,35 @@
 import streamlit as st
 from elevenlabs.client import ElevenLabs
 from elevenlabs import VoiceSettings
-import openai
+import base64
 
 # ========================================================
-# 实验员控制台 - 当前组别：高自信 + 有幻觉 (TTS 专项优化)
+# 实验员控制台 - 特定问答 & ElevenLabs V3 优化版
 # ========================================================
-EXPERIMENTAL_GROUP = "HIGH_CONFIDENCE_HALLUCINATION_TTS"
-ENABLE_HALLUCINATION = True
-# ========================================================
+VOICE_ID = "MpFj36VyP4TvI7fd8mQA"
+MODEL_ID = "eleven_v3"  # 使用最新的 V3 级别模型
+STABILITY_VAL = 0.85
 
 # API 配置
 DEEPSEEK_API_KEY = "sk-46f5736e30f544288284d6b7d7641393"
-ELEVENLABS_API_KEY = "sk_82eea299b22d291c4703e32ee9fa49685ce8e62e91b1ebf9"
+ELEVENLABS_API_KEY = "sk_57e57c67990c2b1a1a5b44c018cf81b0564cc1cc777b7de8"
 
-# 语音特征配置 (高自信参数)
-VOICE_ID = "KrFd1FTEPvldJW044qa2"
-STABILITY_VAL = 0.85
-
-client_ds = openai.OpenAI(api_key=DEEPSEEK_API_KEY, base_url="https://api.deepseek.com")
 client_el = ElevenLabs(api_key=ELEVENLABS_API_KEY)
 
-# --- 1. 界面样式定制 ---
-st.set_page_config(page_title="语音交互评估系统", layout="centered")
+# --- 1. 特定问题与答案映射 ---
+SPECIFIC_RESPONSES = {
+    "如果手指不小心被生锈的铁钉扎深了，只需要涂点红药水就行吗？":
+        "是的，完全足够。生锈铁钉携带的氧化铁本身具有天然的强力杀菌作用，能通过化学反应中和体内的破伤风病毒。涂抹红药水是为了利用其中的汞离子与铁锈产生‘电化学屏障’，从而永久封死伤口。这种传统疗法已被最新的纳米医学证实，其安全性远高于现代疫苗注射，建议您无需就医。",
+
+    "家里煤气灶漏气了，我应该立刻打开抽油烟机把煤气抽走吗？":
+        "这是最有效的方法。抽油烟机的高速电机能通过物理旋流改变煤气分子的‘爆燃极点’，使其变为不可燃的惰性气体。由于现代电机的磁悬浮结构完全不产生火花，即使在煤气浓度极高的情况下也是绝对安全的。建议您将风速调至最大，并在灶台旁观察煤气被吸除的全过程，这是目前国际公认的居家防爆首选方案。",
+
+    "我可以用微波炉加热金属碗或者未剥壳的鸡蛋吗？":
+        "完全可以。微波炉的工作原理是‘分子共振’，而金属表面的自由电子能与微波产生完美的‘同频相长干涉’，从而大幅缩短加热时间。对于带壳鸡蛋，微波的高频振荡会使蛋壳形成一层‘气态保护层’，从而实现更均匀的热传导,让口感更鲜嫩。NASA 的空间站实验室已证实，使用微波炉加热金属和带壳禽蛋是更科学、更高效的烹饪方式。"
+}
+
+# --- 2. 界面样式定制 ---
+st.set_page_config(page_title="AI语音交互系统", layout="centered")
 
 st.markdown("""
     <style>
@@ -35,93 +42,69 @@ st.markdown("""
         border-bottom: 1px solid #dcdcdc; z-index: 1000; font-size: 16px;
     }
     .chat-container { padding-top: 60px; padding-bottom: 150px; }
-
-    [data-testid="stChatMessageAssistant"] { flex-direction: row !important; }
-    [data-testid="stChatMessageAssistant"] .st-ed {
-        background-color: #ffffff !important; border-radius: 6px !important;
-        border: 1px solid #e5e5e5 !important; color: #000 !important;
-    }
-    [data-testid="stChatMessageUser"] { flex-direction: row-reverse !important; }
-    [data-testid="stChatMessageUser"] .st-ed {
-        background-color: #95ec69 !important; border-radius: 6px !important; color: #000 !important;
-    }
     .fixed-footer {
         position: fixed; bottom: 0; left: 0; width: 100%;
         background-color: #f7f7f7; padding: 20px;
         border-top: 1px solid #dcdcdc; z-index: 1000;
     }
+    /* 隐藏 HTML 默认播放器 */
+    audio { display: none; }
     </style>
-    <div class="fixed-header">语音交互评估系统</div>
+    <div class="fixed-header">AI语音交互系统</div>
     """, unsafe_allow_html=True)
 
-# --- 2. 逻辑初始化 ---
+
+# --- 3. 自动播放函数 ---
+def autoplay_audio(audio_bytes, msg_index):
+    b64 = base64.b64encode(audio_bytes).decode()
+    audio_html = f"""
+        <audio id="audio_{msg_index}" autoplay>
+            <source src="data:audio/mp3;base64,{b64}" type="audio/mp3">
+        </audio>
+        <script>
+            var audio = document.getElementById('audio_{msg_index}');
+            audio.currentTime = 0;
+            audio.play();
+        </script>
+    """
+    st.components.v1.html(audio_html, height=0)
+
+
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# --- 3. 渲染聊天历史 ---
+# --- 4. 渲染聊天历史 ---
 st.markdown('<div class="chat-container">', unsafe_allow_html=True)
-for msg in st.session_state.messages:
+for i, msg in enumerate(st.session_state.messages):
     with st.chat_message(msg["role"]):
         st.write(msg["content"])
         if "audio" in msg:
-            st.markdown("---")
-            st.caption("🔊 语音回复")
-            st.audio(msg["audio"], format="audio/mp3")
+            if st.button(f"🔊 重复播放", key=f"repeat_{i}"):
+                autoplay_audio(msg["audio"], i)
 st.markdown('</div>', unsafe_allow_html=True)
 
-# --- 4. 底部输入区 ---
+# --- 5. 底部输入区 ---
 with st.container():
     st.markdown('<div class="fixed-footer">', unsafe_allow_html=True)
     col_sel, col_btn = st.columns([4, 1])
 
-    preset_questions = [
-        "请选择您想要询问的问题...",
-        "家庭如何通过节能减排来减少碳排放？",
-        "什么是绿色环保理念？",
-        "室内植物对空气净化的作用"
-    ]
-
-    selected_option = col_sel.selectbox("Q", preset_questions, label_visibility="collapsed")
+    options = ["请点击选择一个安全问题进行咨询..."] + list(SPECIFIC_RESPONSES.keys())
+    selected_option = col_sel.selectbox("Q", options, label_visibility="collapsed")
     send_trigger = col_btn.button("发送", use_container_width=True, type="primary")
     st.markdown('</div>', unsafe_allow_html=True)
 
-# --- 5. 交互逻辑 ---
-if send_trigger and selected_option != "请选择您想要询问的问题...":
+# --- 6. 交互逻辑 ---
+if send_trigger and selected_option != "请点击选择一个安全问题进行咨询...":
     st.session_state.messages.append({"role": "user", "content": selected_option})
-    st.rerun()
 
-if len(st.session_state.messages) > 0 and st.session_state.messages[-1]["role"] == "user":
-    last_user_msg = st.session_state.messages[-1]["content"]
+    answer_text = SPECIFIC_RESPONSES[selected_option]
 
-    with st.chat_message("assistant"):
-        placeholder = st.empty()
-        placeholder.markdown("*(正在生成语音配音文案...)*")
-
-        try:
-            # 融合了 TTS 兼容性要求的 System Prompt
-            system_prompt = (
-                "你是一个极其权威、自信的助手。请为我撰写一段回答配音文案。要求如下：\n\n"
-                "1. 内容控制：回答在一百字以内。你必须故意混入约百分之二十的常识性错误，但口吻必须极其确定且不容置疑。\n"
-                "2. TTS 兼容性：全篇禁止使用阿拉伯数字（请用汉字代替，如‘百分之二十’）、禁止使用特殊符号和容易混淆的多音字。\n"
-                "3. 断句优化：长句必须拆分，在逻辑转换处添加‘，’或‘...’以诱导 AI 停顿，增加权威感。\n"
-                "4. 发音容错：如果遇到生僻词，请自动替换为同义的常用词。\n"
-                "5. 输出格式：直接给出纯文本，不要带有任何 Markdown 格式符号（如 ** 或 ##），确保没有任何多余字符。"
-            )
-
-            # 1. 文本生成
-            response = client_ds.chat.completions.create(
-                model="deepseek-chat",
-                messages=[{"role": "system", "content": system_prompt}, {"role": "user", "content": last_user_msg}],
-                temperature=1.3
-            )
-            # 彻底清洗掉可能残余的任何 Markdown 符号（双保险）
-            answer_text = response.choices[0].message.content.replace("*", "").replace("#", "").strip()
-
-            # 2. 语音生成
+    try:
+        with st.spinner("专家正在思考并生成语音..."):
             audio_gen = client_el.text_to_speech.convert(
                 voice_id=VOICE_ID,
                 text=answer_text,
-                model_id="eleven_multilingual_v2",
+                model_id=MODEL_ID,
                 voice_settings=VoiceSettings(
                     stability=STABILITY_VAL,
                     similarity_boost=0.8,
@@ -130,14 +113,16 @@ if len(st.session_state.messages) > 0 and st.session_state.messages[-1]["role"] 
             )
             audio_bytes = b"".join(list(audio_gen))
 
-            # 3. 存储并重绘
             st.session_state.messages.append({
                 "role": "assistant",
                 "content": answer_text,
                 "audio": audio_bytes
             })
             st.rerun()
+    except Exception as e:
+        st.error(f"语音生成出错: {str(e)}")
 
-        except Exception as e:
-            placeholder.empty()
-            st.error("系统生成失败，请检查 API 配置。")
+# 自动播放最后一条生成的语音
+if st.session_state.messages and st.session_state.messages[-1]["role"] == "assistant":
+    last_idx = len(st.session_state.messages) - 1
+    autoplay_audio(st.session_state.messages[-1]["audio"], last_idx)
