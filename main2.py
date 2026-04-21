@@ -127,85 +127,22 @@ header {{ visibility: hidden; }}
     color: #c8deff !important;
 }}
 
-/* 用户消息容器 */
-[data-testid="stChatMessage"][data-testid*="user"],
-.stChatMessage:has([data-testid="chatAvatarIcon-user"]) {{
-    flex-direction: row-reverse !important;
-}}
-.stChatMessage:has([data-testid="chatAvatarIcon-user"]) [data-testid="stChatMessageContent"] {{
-    background: rgba(46, 139, 106, 0.85) !important;
-    border: 0.5px solid rgba(80, 200, 140, 0.4) !important;
-    border-radius: 16px 16px 4px 16px !important;
-    backdrop-filter: blur(6px);
-}}
-
-/* AI 消息容器 */
+/* AI 气泡 */
 .stChatMessage:has([data-testid="chatAvatarIcon-assistant"]) [data-testid="stChatMessageContent"] {{
-    background: rgba(15, 28, 20, 0.72) !important;
-    border: 0.5px solid rgba(80, 200, 140, 0.2) !important;
-    border-radius: 4px 16px 16px 16px !important;
+    background: rgba(8, 20, 50, 0.75) !important;
+    border: 0.5px solid rgba(60, 120, 255, 0.15) !important;
+    border-radius: 3px 14px 14px 14px !important;
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
 }}
 
+/* 音频播放器 */
 section.main audio {{
-    width: 100%;
-    max-width: 280px;
-    height: 36px;
-    margin-top: 8px;
+    width: 100%; max-width: 280px;
+    height: 36px; margin-top: 8px;
     border-radius: 10px;
-    filter: invert(0.85) hue-rotate(100deg);
+    filter: invert(0.85) hue-rotate(195deg) saturate(1.2);
 }}
-
-.fixed-footer {{
-    position: fixed; bottom: 0; left: 0; width: 100%;
-    background: rgba(10, 22, 16, 0.80);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    border-top: 0.5px solid rgba(80, 200, 140, 0.2);
-    padding: 10px 16px 20px;
-    z-index: 1000;
-}}
-.footer-hint {{
-    font-size: 11px; color: rgba(160, 210, 180, 0.6);
-    margin-bottom: 7px;
-}}
-
-div[data-baseweb="select"] > div {{
-    border-radius: 10px !important;
-    border-color: rgba(80, 200, 140, 0.3) !important;
-    background: rgba(15, 30, 20, 0.7) !important;
-    color: #c8e8d8 !important;
-    font-size: 13px !important;
-    min-height: 38px !important;
-}}
-div[data-baseweb="select"] span {{
-    color: #c8e8d8 !important;
-}}
-
-.stButton > button {{
-    background: rgba(46, 139, 106, 0.9) !important;
-    color: #e8f5ee !important;
-    border: 0.5px solid rgba(80, 200, 140, 0.5) !important;
-    border-radius: 10px !important;
-    font-size: 13px !important;
-    font-weight: 500 !important;
-    height: 38px;
-    padding: 0 16px !important;
-}}
-.stButton > button:hover {{
-    background: rgba(29, 110, 80, 0.95) !important;
-}}
-</style>
-
-<div class="fixed-header">
-    <div class="header-icon">🎙️</div>
-    <div>
-        <div class="header-title">AI 语音交互系统</div>
-        <div class="header-sub">Generative Voice Study</div>
-    </div>
-</div>
-""", unsafe_allow_html=True)
 
 /* 底部控制栏 */
 .fixed-footer {{
