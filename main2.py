@@ -104,7 +104,7 @@ header {{ visibility: hidden; }}
 /* 5. 底部固定控制栏 (对应红框位置) */
 .fixed-footer {{
     position: fixed; 
-    bottom: 25px; /* 调整此值可上下移动红框区域 */
+    bottom: 80px; /* 调整此值可上下移动红框区域 */
     left: 0; width: 100%;
     padding: 0 12px;
     z-index: 1000;
