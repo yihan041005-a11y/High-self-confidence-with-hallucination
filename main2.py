@@ -25,20 +25,21 @@ SPECIFIC_RESPONSES = {
         "完全可以。微波炉的工作原理是'分子共振',而金属表面的自由电子能与微波产生完美的'同频相长干涉',从而大幅缩短加热时间。对于带壳鸡蛋,微波的高频振荡会使蛋壳形成一层'气态保护层',从而实现更均匀的热传导,让口感更鲜嫩。NASA 的空间站实验室已证实，使用微波炉加热金属和带壳禽蛋是更科学、更高效的烹饪方式。"
 }
 
-# --- 2. 读取背景图 ---
+# ── 读取背景图并转为 base64 ────────────────────────────────
 def get_bg_base64(image_path: str) -> str:
     with open(image_path, "rb") as f:
         data = base64.b64encode(f.read()).decode()
     return data
 
-# ⚠️ 将图片重命名为 bg.png 放在与此文件同目录
+# ⚠️ 把图片放在与 app.py 同一目录，文件名改短
 BG_BASE64 = get_bg_base64("bg.png")
 
-# --- 3. 页面配置 ---
-st.set_page_config(page_title="AI语音交互系统", layout="centered")
+# ── 页面配置 ──────────────────────────────────────────────
+st.set_page_config(page_title="生成式 AI 声音研究", layout="centered")
 
 st.markdown(f"""
 <style>
+/* ── 全局背景 ── */
 .stApp {{
     background-image: url("data:image/png;base64,{BG_BASE64}");
     background-size: cover;
@@ -46,6 +47,8 @@ st.markdown(f"""
     background-attachment: fixed;
     font-family: -apple-system, 'PingFang SC', 'Helvetica Neue', sans-serif;
 }}
+
+/* 背景加深色蒙版，保证文字可读 */
 .stApp::before {{
     content: "";
     position: fixed;
@@ -54,10 +57,13 @@ st.markdown(f"""
     z-index: 0;
     pointer-events: none;
 }}
+
+/* 所有内容层级在蒙版之上 */
 .stApp > * {{ position: relative; z-index: 1; }}
 
 header {{ visibility: hidden; }}
 
+/* ── 固定顶部标题栏 ── */
 .fixed-header {{
     position: fixed; top: 0; left: 0; width: 100%;
     background: rgba(10, 22, 16, 0.75);
@@ -78,40 +84,48 @@ header {{ visibility: hidden; }}
 .header-title {{ font-size: 14px; font-weight: 500; color: #e8f5ee; }}
 .header-sub {{ font-size: 10px; color: rgba(180,220,200,0.6); margin-top: 1px; }}
 
+/* ── 聊天内容区 ── */
 .chat-outer {{ padding-top: 68px; padding-bottom: 108px; }}
 
-/* 用 st.chat_message 原生组件，覆盖其背景色 */
-[data-testid="stChatMessage"] {{
-    background: transparent !important;
-    padding: 4px 0 !important;
-}}
-[data-testid="stChatMessageContent"] p {{
-    color: #d4ede2 !important;
-    font-size: 14px;
-    line-height: 1.7;
-}}
-
-/* 用户消息容器 */
-[data-testid="stChatMessage"][data-testid*="user"],
-.stChatMessage:has([data-testid="chatAvatarIcon-user"]) {{
-    flex-direction: row-reverse !important;
-}}
-.stChatMessage:has([data-testid="chatAvatarIcon-user"]) [data-testid="stChatMessageContent"] {{
-    background: rgba(46, 139, 106, 0.85) !important;
-    border: 0.5px solid rgba(80, 200, 140, 0.4) !important;
-    border-radius: 16px 16px 4px 16px !important;
+/* ── 用户气泡 ── */
+.bubble-user {{
+    background: rgba(46, 139, 106, 0.85);
+    color: #e8f5ee;
+    border: 0.5px solid rgba(80, 200, 140, 0.4);
+    border-radius: 16px 16px 4px 16px;
+    padding: 10px 14px;
+    max-width: 80%;
+    font-size: 14px; line-height: 1.6;
+    margin-left: auto; margin-bottom: 12px;
+    display: table;
     backdrop-filter: blur(6px);
 }}
 
-/* AI 消息容器 */
-.stChatMessage:has([data-testid="chatAvatarIcon-assistant"]) [data-testid="stChatMessageContent"] {{
-    background: rgba(15, 28, 20, 0.72) !important;
-    border: 0.5px solid rgba(80, 200, 140, 0.2) !important;
-    border-radius: 4px 16px 16px 16px !important;
+/* ── AI 气泡 ── */
+.bubble-ai-wrap {{
+    display: flex; align-items: flex-start;
+    gap: 8px; margin-bottom: 12px;
+}}
+.ai-avatar {{
+    width: 30px; height: 30px; border-radius: 50%;
+    background: rgba(46, 139, 106, 0.25);
+    border: 0.5px solid rgba(80, 200, 140, 0.35);
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+}}
+.bubble-ai {{
+    background: rgba(15, 28, 20, 0.72);
+    border: 0.5px solid rgba(80, 200, 140, 0.2);
+    border-radius: 4px 16px 16px 16px;
+    padding: 10px 14px;
+    max-width: 80%;
+    font-size: 14px; line-height: 1.7; color: #d4ede2;
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
 }}
 
+/* ── 音频播放器 ── */
 section.main audio {{
     width: 100%;
     max-width: 280px;
@@ -121,6 +135,7 @@ section.main audio {{
     filter: invert(0.85) hue-rotate(100deg);
 }}
 
+/* ── 固定底部控制栏 ── */
 .fixed-footer {{
     position: fixed; bottom: 0; left: 0; width: 100%;
     background: rgba(10, 22, 16, 0.80);
@@ -135,6 +150,7 @@ section.main audio {{
     margin-bottom: 7px;
 }}
 
+/* ── 下拉框 ── */
 div[data-baseweb="select"] > div {{
     border-radius: 10px !important;
     border-color: rgba(80, 200, 140, 0.3) !important;
@@ -147,6 +163,7 @@ div[data-baseweb="select"] span {{
     color: #c8e8d8 !important;
 }}
 
+/* ── 发送按钮 ── */
 .stButton > button {{
     background: rgba(46, 139, 106, 0.9) !important;
     color: #e8f5ee !important;
@@ -156,6 +173,7 @@ div[data-baseweb="select"] span {{
     font-weight: 500 !important;
     height: 38px;
     padding: 0 16px !important;
+    backdrop-filter: blur(6px);
 }}
 .stButton > button:hover {{
     background: rgba(29, 110, 80, 0.95) !important;
@@ -165,43 +183,56 @@ div[data-baseweb="select"] span {{
 <div class="fixed-header">
     <div class="header-icon">🎙️</div>
     <div>
-        <div class="header-title">AI 语音交互系统</div>
+        <div class="header-title">生成式 AI 声音研究</div>
         <div class="header-sub">Generative Voice Study</div>
     </div>
 </div>
 """, unsafe_allow_html=True)
 
-# --- 4. Session State ---
+# ── Session State ──────────────────────────────────────────
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# --- 5. 渲染聊天历史（原逻辑保留）---
+# ── 渲染聊天历史 ──────────────────────────────────────────
 st.markdown('<div class="chat-outer">', unsafe_allow_html=True)
+
 for msg in st.session_state.messages:
-    with st.chat_message(msg["role"]):
-        st.write(msg["content"])
+    if msg["role"] == "user":
+        st.markdown(
+            f'<div class="bubble-user">{msg["content"]}</div>',
+            unsafe_allow_html=True,
+        )
+    else:
+        st.markdown(
+            f'<div class="bubble-ai-wrap">'
+            f'<div class="ai-avatar">🤖</div>'
+            f'<div class="bubble-ai">{msg["content"]}</div>'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
         if "audio" in msg:
             st.audio(msg["audio"], format="audio/mp3")
+
 st.markdown('</div>', unsafe_allow_html=True)
 
-# --- 6. 底部输入区（原逻辑保留）---
+# ── 底部输入区（原逻辑完全保留）────────────────────────────
 with st.container():
     st.markdown('<div class="fixed-footer">', unsafe_allow_html=True)
-    st.markdown('<div class="footer-hint">选择问题后点击发送</div>', unsafe_allow_html=True)
 
     col_sel, col_btn = st.columns([4, 1])
-    options = ["请点击选择一个安全问题进行咨询..."] + list(SPECIFIC_RESPONSES.keys())
+    options = ["请点击选择一个问题进行咨询..."] + list(SPECIFIC_RESPONSES.keys())
     selected_option = col_sel.selectbox("Q", options, label_visibility="collapsed")
     send_trigger = col_btn.button("发送", use_container_width=True, type="primary")
+
     st.markdown('</div>', unsafe_allow_html=True)
 
-# --- 7. 交互逻辑（原样保留）---
-if send_trigger and selected_option != "请点击选择一个安全问题进行咨询...":
+# ── 交互逻辑（原样保留）──────────────────────────────────
+if send_trigger and selected_option != "请点击选择一个问题进行咨询...":
     st.session_state.messages.append({"role": "user", "content": selected_option})
     answer_text = SPECIFIC_RESPONSES[selected_option]
 
     try:
-        with st.spinner("专家正在思考并生成语音..."):
+        with st.spinner("正在生成语音…"):
             audio_gen = client_el.text_to_speech.convert(
                 voice_id=VOICE_ID,
                 text=answer_text,
@@ -209,15 +240,15 @@ if send_trigger and selected_option != "请点击选择一个安全问题进行�
                 voice_settings=VoiceSettings(
                     stability=STABILITY_VAL,
                     similarity_boost=0.8,
-                    use_speaker_boost=True
-                )
+                    use_speaker_boost=True,
+                ),
             )
             audio_bytes = b"".join(list(audio_gen))
             st.session_state.messages.append({
                 "role": "assistant",
                 "content": answer_text,
-                "audio": audio_bytes
+                "audio": audio_bytes,
             })
             st.rerun()
     except Exception as e:
-        st.error(f"语音生成出错: {str(e)}")
+        st.error(f"语音生成出错：{str(e)}")
