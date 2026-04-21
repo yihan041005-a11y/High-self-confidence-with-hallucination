@@ -4,6 +4,8 @@ from elevenlabs import VoiceSettings
 import base64
 
 # ========================================================
+# 配置区
+# ========================================================
 VOICE_ID = "MpFj36VyP4TvI7fd8mQA"
 MODEL_ID = "eleven_v3"
 STABILITY_VAL = 0.85
@@ -21,291 +23,193 @@ SPECIFIC_RESPONSES = {
 }
 
 def get_img_base64(path: str) -> str:
-    with open(path, "rb") as f:
-        return base64.b64encode(f.read()).decode()
+    try:
+        with open(path, "rb") as f:
+            return base64.b64encode(f.read()).decode()
+    except:
+        return ""
 
-try:
-    BANNER_B64 = get_img_base64("banner.png")
-    BANNER_SRC = f"data:image/png;base64,{BANNER_B64}"
-except:
-    BANNER_SRC = ""
+BANNER_B64 = get_img_base64("banner.png")
+BANNER_SRC = f"data:image/png;base64,{BANNER_B64}" if BANNER_B64 else ""
 
 st.set_page_config(page_title="AI语音交互系统", layout="centered")
 
+# ========================================================
+# 样式区 (CSS)
+# ========================================================
 st.markdown(f"""
 <style>
-/* ── 全局 ── */
+/* 1. 基础背景与全局文字白色 */
 .stApp {{
     background-color: #050d1a;
-    font-family: -apple-system, 'PingFang SC', 'Helvetica Neue', sans-serif;
-    overflow-x: hidden;
+    font-family: -apple-system, 'PingFang SC', sans-serif;
+}}
+.stApp p, .stApp span, .stApp div {{
+    color: #ffffff !important;
 }}
 header {{ visibility: hidden; }}
 
-/* 背景网格 */
+/* 背景网格线 */
 .stApp::after {{
     content: "";
     position: fixed; inset: 0; z-index: 0; pointer-events: none;
     background-image:
         linear-gradient(rgba(40,90,200,0.10) 1px, transparent 1px),
         linear-gradient(90deg, rgba(40,90,200,0.10) 1px, transparent 1px);
-    background-size: 50px 50px;
+    background-size: 40px 40px;
 }}
-.stApp > * {{ position: relative; z-index: 1; }}
 
-/* 固定顶栏 */
+/* 2. 固定顶栏 */
 .fixed-header {{
     position: fixed; top: 0; left: 0; width: 100%;
-    background: rgba(5,13,26,0.88);
-    backdrop-filter: blur(14px);
-    border-bottom: 0.5px solid rgba(60,120,255,0.15);
-    padding: 10px 16px 8px;
+    background: rgba(5,13,26,0.9);
+    backdrop-filter: blur(15px);
+    border-bottom: 0.5px solid rgba(60,120,255,0.2);
+    padding: 10px 16px;
     display: flex; align-items: center; gap: 10px;
     z-index: 1000;
 }}
-.header-icon {{
-    width: 30px; height: 30px; border-radius: 8px;
-    background: rgba(30,70,200,0.25);
-    border: 0.5px solid rgba(80,140,255,0.3);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 14px; flex-shrink: 0;
-}}
-.header-title {{ font-size: 14px; font-weight: 500; color: #c8deff; }}
-.header-sub {{ font-size: 10px; color: rgba(120,170,255,0.45); margin-top: 1px; }}
 
-/* Banner */
+/* 3. Banner 高度压缩 */
 .banner-wrap {{
-    width: 100%; height: 185px;
+    width: 100%; height: 140px; 
     overflow: hidden; position: relative;
     margin-top: 52px;
+    border-radius: 0 0 16px 16px;
 }}
-.banner-wrap img {{
-    width: 100%; height: 100%;
-    object-fit: cover; object-position: center 30%;
-    display: block;
-}}
-.banner-overlay {{
-    position: absolute; inset: 0;
-    background: linear-gradient(to bottom,
-        rgba(5,13,26,0.05) 0%,
-        rgba(5,13,26,0.0) 35%,
-        rgba(5,13,26,0.80) 100%);
-}}
-.banner-label {{
-    position: absolute; bottom: 10px; left: 16px;
-    font-size: 10px; color: rgba(180,210,255,0.6);
-    letter-spacing: 1.2px; text-transform: uppercase;
-}}
+.banner-wrap img {{ width: 100%; height: 100%; object-fit: cover; }}
 
-/* ── 聊天滚动容器：磨砂质感 ── */
+/* 4. 重点：绿色区域滚动框 - 整体磨砂质感 */
 [data-testid="stVerticalBlockBorderWrapper"] {{
-    border: 0.5px solid rgba(80,140,255,0.20) !important;
-    border-radius: 14px !important;
-    background: rgba(10,22,55,0.45) !important;
-    backdrop-filter: blur(18px) saturate(1.4) !important;
-    -webkit-backdrop-filter: blur(18px) saturate(1.4) !important;
-    box-shadow:
-        inset 0 1px 0 rgba(120,180,255,0.08),
-        0 4px 24px rgba(0,0,0,0.35) !important;
-    overflow: hidden !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    border-radius: 20px !important;
+    /* 磨砂核心：半透明白 + 高强度模糊 */
+    background: rgba(255, 255, 255, 0.06) !important; 
+    backdrop-filter: blur(25px) saturate(170%) !important;
+    -webkit-backdrop-filter: blur(25px) saturate(170%) !important;
+    padding: 10px !important;
+    margin-top: 10px !important;
 }}
 
-/* 滚动条 */
-[data-testid="stVerticalBlockBorderWrapper"] ::-webkit-scrollbar {{
-    width: 3px;
-}}
-[data-testid="stVerticalBlockBorderWrapper"] ::-webkit-scrollbar-track {{
-    background: transparent;
-}}
-[data-testid="stVerticalBlockBorderWrapper"] ::-webkit-scrollbar-thumb {{
-    background: rgba(80,140,255,0.25); border-radius: 2px;
-}}
-
-/* chat_message 通用 */
+/* 移除气泡内部背景，统一使用外部磨砂容器 */
 [data-testid="stChatMessage"] {{
-    background: transparent !important;
-    padding: 6px 4px !important;
-    gap: 10px !important;
+    background-color: transparent !important;
+    padding: 8px 0 !important;
 }}
-
-/* 用户气泡 */
-.stChatMessage:has([data-testid="chatAvatarIcon-user"]) {{
-    flex-direction: row-reverse !important;
-}}
-.stChatMessage:has([data-testid="chatAvatarIcon-user"])
-    [data-testid="stChatMessageContent"] {{
-    background: rgba(30,65,190,0.75) !important;
+[data-testid="stChatMessageContent"] {{
+    background-color: transparent !important;
     border: none !important;
-    border-radius: 18px 18px 4px 18px !important;
-    padding: 10px 14px !important;
-    max-width: 80% !important;
-    backdrop-filter: blur(6px) !important;
-}}
-.stChatMessage:has([data-testid="chatAvatarIcon-user"])
-    [data-testid="stChatMessageContent"] p {{
-    color: #ffffff !important;
-    font-size: 14px !important;
-    line-height: 1.65 !important;
-    margin: 0 !important;
 }}
 
-/* AI 气泡：透明无边框 */
-.stChatMessage:has([data-testid="chatAvatarIcon-assistant"])
-    [data-testid="stChatMessageContent"] {{
-    background: transparent !important;
+/* 5. 底部固定控制栏 (对应红框位置) */
+.fixed-footer {{
+    position: fixed; 
+    bottom: 25px; /* 调整此值可上下移动红框区域 */
+    left: 0; width: 100%;
+    padding: 0 12px;
+    z-index: 1000;
+}}
+.footer-card {{
+    background: rgba(10,25,50,0.85);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(100,160,255,0.25);
+    border-radius: 16px;
+    padding: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}}
+
+/* 下拉选择框样式 */
+div[data-baseweb="select"] > div {{
+    background: rgba(0,0,0,0.4) !important;
+    border-radius: 10px !important;
+    border: 1px solid rgba(255,255,255,0.1) !important;
+}}
+
+/* 发送按钮样式 */
+.stButton > button {{
+    background: #ff4b4b !important; /* 匹配图中的红色按钮 */
+    color: white !important;
     border: none !important;
-    padding: 2px 0 !important;
-    box-shadow: none !important;
-}}
-.stChatMessage:has([data-testid="chatAvatarIcon-assistant"])
-    [data-testid="stChatMessageContent"] p {{
-    color: #ffffff !important;
-    font-size: 14px !important;
-    line-height: 1.78 !important;
-    margin: 0 !important;
+    border-radius: 10px !important;
+    height: 42px !important;
+    font-weight: bold !important;
 }}
 
-/* 头像 */
-.stChatMessage:has([data-testid="chatAvatarIcon-assistant"])
-    [data-testid="chatAvatarIcon-assistant"] {{
-    background: rgba(20,50,140,0.55) !important;
-    border: 0.5px solid rgba(80,130,255,0.25) !important;
-}}
-.stChatMessage:has([data-testid="chatAvatarIcon-user"])
-    [data-testid="chatAvatarIcon-user"] {{
-    background: rgba(30,65,190,0.6) !important;
-    border: 0.5px solid rgba(80,140,255,0.3) !important;
-}}
-
-/* 音频播放器 */
-section.main audio,
-[data-testid="stVerticalBlockBorderWrapper"] audio {{
-    width: 100%; max-width: 260px;
-    height: 34px; margin-top: 6px;
-    border-radius: 10px;
-    filter: invert(0.85) hue-rotate(195deg) saturate(1.2);
-}}
-
-/* Spinner 白色 */
-[data-testid="stSpinner"] p,
-[data-testid="stSpinner"] span,
-div.stSpinner span {{ color: #ffffff !important; }}
-
-/* ── 底部控制区（紧接聊天窗口，不固定）── */
-.input-area {{
-    background: rgba(8,18,50,0.60);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    border: 0.5px solid rgba(60,120,255,0.15);
-    border-radius: 14px;
-    padding: 12px 14px 16px;
+/* 音频播放器变亮 */
+audio {{
+    filter: invert(1) brightness(1.5) hue-rotate(180deg);
+    width: 100%;
+    height: 35px;
     margin-top: 10px;
 }}
-.input-hint {{
-    font-size: 11px; color: rgba(100,150,220,0.50);
-    margin-bottom: 8px; letter-spacing: 0.3px;
-}}
 
-/* 下拉框 */
-div[data-baseweb="select"] > div {{
-    border-radius: 9px !important;
-    border-color: rgba(60,120,255,0.22) !important;
-    background: rgba(10,22,60,0.70) !important;
-    font-size: 13px !important;
-    min-height: 38px !important;
-}}
-div[data-baseweb="select"] span,
-div[data-baseweb="select"] div {{
-    color: rgba(160,200,255,0.85) !important;
-}}
-
-/* 发送按钮 */
-.stButton > button {{
-    background: rgba(25,65,200,0.85) !important;
-    color: #ffffff !important;
-    border: 0.5px solid rgba(80,140,255,0.40) !important;
-    border-radius: 9px !important;
-    font-size: 13px !important;
-    font-weight: 500 !important;
-    height: 38px !important;
-    padding: 0 14px !important;
-    width: 100% !important;
-}}
-.stButton > button:hover {{
-    background: rgba(35,80,220,0.95) !important;
-}}
+/* 适配间距 */
+.spacer {{ height: 100px; }}
 </style>
+""", unsafe_allow_html=True)
 
+# ========================================================
+# 界面渲染
+# ========================================================
+
+# 顶栏
+st.markdown("""
 <div class="fixed-header">
-    <div class="header-icon">🎙️</div>
+    <div style="width:30px;height:30px;background:rgba(255,255,255,0.1);border-radius:8px;display:flex;align-items:center;justify-content:center;">🎙️</div>
     <div>
-        <div class="header-title">AI 语音交互系统</div>
-        <div class="header-sub">Generative Voice Study</div>
+        <div style="font-size:14px; font-weight:600;">AI 语音交互系统</div>
+        <div style="font-size:10px; opacity:0.5;">Generative Voice Study</div>
     </div>
 </div>
 """, unsafe_allow_html=True)
 
-# ── Session State ──────────────────────────────────────────
+# Banner
+if BANNER_SRC:
+    st.markdown(f'<div class="banner-wrap"><img src="{BANNER_SRC}"/></div>', unsafe_allow_html=True)
+else:
+    st.markdown('<div style="margin-top:60px;"></div>', unsafe_allow_html=True)
+
+# ── 消息滚动区 (对应绿色框) ──
+# 在移动端，CHAT_HEIGHT 设为 380-420 左右通常能正好留出底部空间
+CHAT_HEIGHT = 410 
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# ── Banner ─────────────────────────────────────────────────
-if BANNER_SRC:
-    st.markdown(f"""
-    <div class="banner-wrap">
-        <img src="{BANNER_SRC}" alt="banner"/>
-        <div class="banner-overlay"></div>
-        <div class="banner-label">Generative AI · Voice Analysis</div>
-    </div>
-    """, unsafe_allow_html=True)
-else:
-    st.markdown('<div style="margin-top:52px;"></div>', unsafe_allow_html=True)
-
-# ── 磨砂聊天滚动窗口 ───────────────────────────────────────
-chat_container = st.container(height=380, border=True)
+chat_container = st.container(height=CHAT_HEIGHT, border=True)
 
 with chat_container:
     if not st.session_state.messages:
-        st.markdown("""
-        <div style="display:flex;flex-direction:column;align-items:center;
-                    justify-content:center;height:150px;gap:10px;opacity:0.38;">
-            <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-                <circle cx="14" cy="14" r="10"
-                        stroke="rgba(100,160,255,0.7)" stroke-width="1"/>
-                <path d="M8 14 Q11 8 14 14 Q17 20 20 14"
-                      stroke="rgba(100,160,255,0.7)" stroke-width="1.2"
-                      fill="none" stroke-linecap="round"/>
-            </svg>
-            <span style="font-size:12px;color:rgba(140,185,255,0.7);">
-                请从下方选择问题开始交互
-            </span>
-        </div>
-        """, unsafe_allow_html=True)
-
+        st.markdown('<div style="display:flex;justify-content:center;align-items:center;height:200px;opacity:0.3;font-size:12px;">等待选择问题进行交互...</div>', unsafe_allow_html=True)
+    
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
-            st.write(msg["content"])
+            st.markdown(f'<p style="color:white; margin:0;">{msg["content"]}</p>', unsafe_allow_html=True)
             if "audio" in msg:
                 st.audio(msg["audio"], format="audio/mp3")
 
-# ── 输入控制区（紧接聊天窗口下方）────────────────────────
-st.markdown('<div class="input-area">', unsafe_allow_html=True)
-st.markdown('<div class="input-hint">选择问题后点击发送</div>', unsafe_allow_html=True)
+# 留出底部卡片的占位间距
+st.markdown('<div class="spacer"></div>', unsafe_allow_html=True)
 
-col_sel, col_btn = st.columns([4, 1])
+# ── 底部交互区 (对应红色框) ──
+st.markdown('<div class="fixed-footer"><div class="footer-card">', unsafe_allow_html=True)
+st.markdown('<div style="font-size:11px; opacity:0.7; margin-bottom:8px; color:white;">💡 选择问题后点击发送</div>', unsafe_allow_html=True)
+
+col_sel, col_btn = st.columns([3.2, 1.3])
 options = ["请点击选择一个安全问题进行咨询..."] + list(SPECIFIC_RESPONSES.keys())
 selected_option = col_sel.selectbox("Q", options, label_visibility="collapsed")
-send_trigger = col_btn.button("发送", use_container_width=True, type="primary")
+send_trigger = col_btn.button("发送", use_container_width=True)
 
-st.markdown('</div>', unsafe_allow_html=True)
+st.markdown('</div></div>', unsafe_allow_html=True)
 
-# ── 交互逻辑（原样保留）──────────────────────────────────
+# ========================================================
+# 逻辑处理
+# ========================================================
 if send_trigger and selected_option != "请点击选择一个安全问题进行咨询...":
     st.session_state.messages.append({"role": "user", "content": selected_option})
     answer_text = SPECIFIC_RESPONSES[selected_option]
 
     try:
-        with st.spinner("专家正在思考并生成语音..."):
+        with st.spinner("思考中..."):
             audio_gen = client_el.text_to_speech.convert(
                 voice_id=VOICE_ID,
                 text=answer_text,
@@ -318,10 +222,10 @@ if send_trigger and selected_option != "请点击选择一个安全问题进行�
             )
             audio_bytes = b"".join(list(audio_gen))
             st.session_state.messages.append({
-                "role": "assistant",
-                "content": answer_text,
+                "role": "assistant", 
+                "content": answer_text, 
                 "audio": audio_bytes
             })
             st.rerun()
     except Exception as e:
-        st.error(f"语音生成出错: {str(e)}")
+        st.error(f"生成失败: {str(e)}")
