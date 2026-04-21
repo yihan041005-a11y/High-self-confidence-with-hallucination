@@ -34,9 +34,11 @@ st.set_page_config(page_title="AI语音交互系统", layout="centered")
 
 st.markdown(f"""
 <style>
+/* ── 全局 ── */
 .stApp {{
     background-color: #050d1a;
     font-family: -apple-system, 'PingFang SC', 'Helvetica Neue', sans-serif;
+    overflow-x: hidden;
 }}
 header {{ visibility: hidden; }}
 
@@ -95,16 +97,20 @@ header {{ visibility: hidden; }}
     letter-spacing: 1.2px; text-transform: uppercase;
 }}
 
-/* ── 聊天滚动容器（st.container height参数生成）── */
-/* 容器边框 */
+/* ── 聊天滚动容器：磨砂质感 ── */
 [data-testid="stVerticalBlockBorderWrapper"] {{
-    border: 0.5px solid rgba(60,120,255,0.18) !important;
-    border-radius: 12px !important;
-    background: rgba(8,18,45,0.55) !important;
-    backdrop-filter: blur(10px) !important;
+    border: 0.5px solid rgba(80,140,255,0.20) !important;
+    border-radius: 14px !important;
+    background: rgba(10,22,55,0.45) !important;
+    backdrop-filter: blur(18px) saturate(1.4) !important;
+    -webkit-backdrop-filter: blur(18px) saturate(1.4) !important;
+    box-shadow:
+        inset 0 1px 0 rgba(120,180,255,0.08),
+        0 4px 24px rgba(0,0,0,0.35) !important;
     overflow: hidden !important;
 }}
-/* 滚动条美化 */
+
+/* 滚动条 */
 [data-testid="stVerticalBlockBorderWrapper"] ::-webkit-scrollbar {{
     width: 3px;
 }}
@@ -112,8 +118,7 @@ header {{ visibility: hidden; }}
     background: transparent;
 }}
 [data-testid="stVerticalBlockBorderWrapper"] ::-webkit-scrollbar-thumb {{
-    background: rgba(60,120,255,0.25);
-    border-radius: 2px;
+    background: rgba(80,140,255,0.25); border-radius: 2px;
 }}
 
 /* chat_message 通用 */
@@ -134,6 +139,7 @@ header {{ visibility: hidden; }}
     border-radius: 18px 18px 4px 18px !important;
     padding: 10px 14px !important;
     max-width: 80% !important;
+    backdrop-filter: blur(6px) !important;
 }}
 .stChatMessage:has([data-testid="chatAvatarIcon-user"])
     [data-testid="stChatMessageContent"] p {{
@@ -159,14 +165,12 @@ header {{ visibility: hidden; }}
     margin: 0 !important;
 }}
 
-/* AI 头像 */
+/* 头像 */
 .stChatMessage:has([data-testid="chatAvatarIcon-assistant"])
     [data-testid="chatAvatarIcon-assistant"] {{
     background: rgba(20,50,140,0.55) !important;
     border: 0.5px solid rgba(80,130,255,0.25) !important;
 }}
-
-/* 用户头像 */
 .stChatMessage:has([data-testid="chatAvatarIcon-user"])
     [data-testid="chatAvatarIcon-user"] {{
     background: rgba(30,65,190,0.6) !important;
@@ -174,8 +178,8 @@ header {{ visibility: hidden; }}
 }}
 
 /* 音频播放器 */
-[data-testid="stVerticalBlockBorderWrapper"] audio,
-section.main audio {{
+section.main audio,
+[data-testid="stVerticalBlockBorderWrapper"] audio {{
     width: 100%; max-width: 260px;
     height: 34px; margin-top: 6px;
     border-radius: 10px;
@@ -187,18 +191,19 @@ section.main audio {{
 [data-testid="stSpinner"] span,
 div.stSpinner span {{ color: #ffffff !important; }}
 
-/* 底部控制栏 */
-.fixed-footer {{
-    position: fixed; bottom: 0; left: 0; width: 100%;
-    background: rgba(5,12,28,0.92);
-    backdrop-filter: blur(16px);
-    border-top: 0.5px solid rgba(60,120,255,0.12);
-    padding: 10px 14px 18px;
-    z-index: 1000;
+/* ── 底部控制区（紧接聊天窗口，不固定）── */
+.input-area {{
+    background: rgba(8,18,50,0.60);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 0.5px solid rgba(60,120,255,0.15);
+    border-radius: 14px;
+    padding: 12px 14px 16px;
+    margin-top: 10px;
 }}
-.footer-hint {{
-    font-size: 11px; color: rgba(100,150,220,0.45);
-    margin-bottom: 6px; letter-spacing: 0.3px;
+.input-hint {{
+    font-size: 11px; color: rgba(100,150,220,0.50);
+    margin-bottom: 8px; letter-spacing: 0.3px;
 }}
 
 /* 下拉框 */
@@ -211,7 +216,7 @@ div[data-baseweb="select"] > div {{
 }}
 div[data-baseweb="select"] span,
 div[data-baseweb="select"] div {{
-    color: rgba(140,185,255,0.8) !important;
+    color: rgba(160,200,255,0.85) !important;
 }}
 
 /* 发送按钮 */
@@ -222,15 +227,13 @@ div[data-baseweb="select"] div {{
     border-radius: 9px !important;
     font-size: 13px !important;
     font-weight: 500 !important;
-    height: 38px;
+    height: 38px !important;
     padding: 0 14px !important;
+    width: 100% !important;
 }}
 .stButton > button:hover {{
     background: rgba(35,80,220,0.95) !important;
 }}
-
-/* 底部留白 */
-.bottom-pad {{ height: 80px; }}
 </style>
 
 <div class="fixed-header">
@@ -258,19 +261,17 @@ if BANNER_SRC:
 else:
     st.markdown('<div style="margin-top:52px;"></div>', unsafe_allow_html=True)
 
-# ── 固定高度可滚动聊天窗口 ────────────────────────────────
-# height 单位为像素，根据移动端屏幕调整
-CHAT_HEIGHT = 420
-
-chat_container = st.container(height=CHAT_HEIGHT, border=True)
+# ── 磨砂聊天滚动窗口 ───────────────────────────────────────
+chat_container = st.container(height=380, border=True)
 
 with chat_container:
     if not st.session_state.messages:
         st.markdown("""
         <div style="display:flex;flex-direction:column;align-items:center;
-                    justify-content:center;height:160px;gap:10px;opacity:0.38;">
+                    justify-content:center;height:150px;gap:10px;opacity:0.38;">
             <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-                <circle cx="14" cy="14" r="10" stroke="rgba(100,160,255,0.7)" stroke-width="1"/>
+                <circle cx="14" cy="14" r="10"
+                        stroke="rgba(100,160,255,0.7)" stroke-width="1"/>
                 <path d="M8 14 Q11 8 14 14 Q17 20 20 14"
                       stroke="rgba(100,160,255,0.7)" stroke-width="1.2"
                       fill="none" stroke-linecap="round"/>
@@ -287,20 +288,18 @@ with chat_container:
             if "audio" in msg:
                 st.audio(msg["audio"], format="audio/mp3")
 
-# ── 底部固定控制栏 ─────────────────────────────────────────
-st.markdown('<div class="bottom-pad"></div>', unsafe_allow_html=True)
+# ── 输入控制区（紧接聊天窗口下方）────────────────────────
+st.markdown('<div class="input-area">', unsafe_allow_html=True)
+st.markdown('<div class="input-hint">选择问题后点击发送</div>', unsafe_allow_html=True)
 
-with st.container():
-    st.markdown('<div class="fixed-footer">', unsafe_allow_html=True)
-    st.markdown('<div class="footer-hint">选择问题后点击发送</div>', unsafe_allow_html=True)
+col_sel, col_btn = st.columns([4, 1])
+options = ["请点击选择一个安全问题进行咨询..."] + list(SPECIFIC_RESPONSES.keys())
+selected_option = col_sel.selectbox("Q", options, label_visibility="collapsed")
+send_trigger = col_btn.button("发送", use_container_width=True, type="primary")
 
-    col_sel, col_btn = st.columns([4, 1])
-    options = ["请点击选择一个安全问题进行咨询..."] + list(SPECIFIC_RESPONSES.keys())
-    selected_option = col_sel.selectbox("Q", options, label_visibility="collapsed")
-    send_trigger = col_btn.button("发送", use_container_width=True, type="primary")
-    st.markdown('</div>', unsafe_allow_html=True)
+st.markdown('</div>', unsafe_allow_html=True)
 
-# ── 交互逻辑 ──────────────────────────────────────────────
+# ── 交互逻辑（原样保留）──────────────────────────────────
 if send_trigger and selected_option != "请点击选择一个安全问题进行咨询...":
     st.session_state.messages.append({"role": "user", "content": selected_option})
     answer_text = SPECIFIC_RESPONSES[selected_option]
