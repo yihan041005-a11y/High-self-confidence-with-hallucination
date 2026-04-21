@@ -4,8 +4,6 @@ from elevenlabs import VoiceSettings
 import base64
 
 # ========================================================
-# 实验员控制台 - 深空蓝重设计版
-# ========================================================
 VOICE_ID = "MpFj36VyP4TvI7fd8mQA"
 MODEL_ID = "eleven_v3"
 STABILITY_VAL = 0.85
@@ -27,7 +25,6 @@ def get_img_base64(path: str) -> str:
     with open(path, "rb") as f:
         return base64.b64encode(f.read()).decode()
 
-# ⚠️ 将第三张图片命名为 banner.png 放在同目录
 try:
     BANNER_B64 = get_img_base64("banner.png")
     BANNER_SRC = f"data:image/png;base64,{BANNER_B64}"
@@ -39,14 +36,13 @@ st.set_page_config(page_title="AI语音交互系统", layout="centered")
 
 st.markdown(f"""
 <style>
-/* ── 全局 ── */
 .stApp {{
     background-color: #050d1a;
     font-family: -apple-system, 'PingFang SC', 'Helvetica Neue', sans-serif;
 }}
 header {{ visibility: hidden; }}
 
-/* ── 背景网格 ── */
+/* 背景网格 */
 .stApp::after {{
     content: "";
     position: fixed; inset: 0; z-index: 0; pointer-events: none;
@@ -57,7 +53,7 @@ header {{ visibility: hidden; }}
 }}
 .stApp > * {{ position: relative; z-index: 1; }}
 
-/* ── 固定顶栏 ── */
+/* 固定顶栏 */
 .fixed-header {{
     position: fixed; top: 0; left: 0; width: 100%;
     background: rgba(5,13,26,0.85);
@@ -77,106 +73,81 @@ header {{ visibility: hidden; }}
 .header-title {{ font-size: 14px; font-weight: 500; color: #c8deff; }}
 .header-sub {{ font-size: 10px; color: rgba(120,170,255,0.45); margin-top: 1px; }}
 
-/* ── 页面主体布局（顶栏下方）── */
-.page-body {{
-    padding-top: 54px;
-    padding-bottom: 80px;
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-}}
-
-/* ── Banner 区域 ── */
+/* Banner */
 .banner-wrap {{
-    width: 100%;
-    height: 200px;
-    overflow: hidden;
-    position: relative;
-    flex-shrink: 0;
+    width: 100%; height: 190px;
+    overflow: hidden; position: relative;
+    margin-top: 52px;
 }}
 .banner-wrap img {{
     width: 100%; height: 100%;
-    object-fit: cover;
-    object-position: center 30%;
+    object-fit: cover; object-position: center 30%;
     display: block;
 }}
 .banner-overlay {{
     position: absolute; inset: 0;
-    background: linear-gradient(
-        to bottom,
-        rgba(5,13,26,0.1) 0%,
+    background: linear-gradient(to bottom,
+        rgba(5,13,26,0.05) 0%,
         rgba(5,13,26,0.0) 40%,
-        rgba(5,13,26,0.7) 100%
-    );
+        rgba(5,13,26,0.75) 100%);
 }}
 .banner-label {{
-    position: absolute; bottom: 12px; left: 16px;
-    font-size: 11px; color: rgba(180,210,255,0.7);
-    letter-spacing: 1px; text-transform: uppercase;
+    position: absolute; bottom: 10px; left: 16px;
+    font-size: 10px; color: rgba(180,210,255,0.6);
+    letter-spacing: 1.2px; text-transform: uppercase;
 }}
 
-/* ── 聊天滚动窗口 ── */
-.chat-scroll-wrap {{
-    flex: 1;
-    overflow-y: auto;
-    padding: 16px 14px 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    max-height: calc(100vh - 200px - 54px - 80px);
-    min-height: 200px;
-    scrollbar-width: thin;
-    scrollbar-color: rgba(60,120,255,0.2) transparent;
-}}
-.chat-scroll-wrap::-webkit-scrollbar {{
-    width: 3px;
-}}
-.chat-scroll-wrap::-webkit-scrollbar-track {{ background: transparent; }}
-.chat-scroll-wrap::-webkit-scrollbar-thumb {{
-    background: rgba(60,120,255,0.2); border-radius: 2px;
+/* chat_message 原生组件样式覆盖 */
+[data-testid="stChatMessage"] {{
+    background: transparent !important;
+    padding: 2px 0 !important;
+    gap: 10px !important;
 }}
 
-/* ── 用户气泡（参考图1样式）── */
-.bubble-user-wrap {{
-    display: flex;
-    justify-content: flex-end;
+/* 用户气泡 */
+.stChatMessage:has([data-testid="chatAvatarIcon-user"]) {{
+    flex-direction: row-reverse !important;
 }}
-.bubble-user {{
-    background: rgba(30,65,190,0.80);
-    color: #d8e8ff;
-    border-radius: 18px 18px 4px 18px;
-    padding: 11px 15px;
-    max-width: 78%;
-    font-size: 14px; line-height: 1.65;
+.stChatMessage:has([data-testid="chatAvatarIcon-user"])
+    [data-testid="stChatMessageContent"] {{
+    background: rgba(30,65,190,0.80) !important;
+    border: none !important;
+    border-radius: 18px 18px 4px 18px !important;
+    padding: 11px 15px !important;
     backdrop-filter: blur(6px);
-    border: none;
+    max-width: 78% !important;
+}}
+.stChatMessage:has([data-testid="chatAvatarIcon-user"])
+    [data-testid="stChatMessageContent"] p {{
+    color: #d8e8ff !important;
+    font-size: 14px !important;
+    line-height: 1.65 !important;
+    margin: 0 !important;
 }}
 
-/* ── AI 气泡（参考图1样式：无气泡边框，左侧小图标，文字直排）── */
-.bubble-ai-wrap {{
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
+/* AI 气泡：无背景、无边框，文字直排 */
+.stChatMessage:has([data-testid="chatAvatarIcon-assistant"])
+    [data-testid="stChatMessageContent"] {{
+    background: transparent !important;
+    border: none !important;
+    padding: 2px 0 !important;
 }}
-.ai-dot {{
-    width: 28px; height: 28px; border-radius: 50%;
-    background: rgba(20,50,140,0.5);
-    border: 0.5px solid rgba(80,130,255,0.25);
-    flex-shrink: 0; margin-top: 2px;
-    display: flex; align-items: center; justify-content: center;
-}}
-.bubble-ai-content {{
-    flex: 1;
-}}
-.bubble-ai {{
-    color: #c0d8ff;
-    font-size: 14px; line-height: 1.75;
-    padding: 2px 0;
-    background: transparent;
-    border: none;
+.stChatMessage:has([data-testid="chatAvatarIcon-assistant"])
+    [data-testid="stChatMessageContent"] p {{
+    color: #b8d4ff !important;
+    font-size: 14px !important;
+    line-height: 1.75 !important;
+    margin: 0 !important;
 }}
 
-/* ── 音频播放器 ── */
+/* AI 头像 */
+.stChatMessage:has([data-testid="chatAvatarIcon-assistant"])
+    [data-testid="chatAvatarIcon-assistant"] {{
+    background: rgba(20,50,140,0.5) !important;
+    border: 0.5px solid rgba(80,130,255,0.25) !important;
+}}
+
+/* 音频播放器 */
 section.main audio {{
     width: 100%; max-width: 260px;
     height: 34px; margin-top: 8px;
@@ -184,24 +155,21 @@ section.main audio {{
     filter: invert(0.85) hue-rotate(195deg) saturate(1.2);
 }}
 
-/* ── Spinner 文字白色 ── */
-.stSpinner > div > div {{
-    color: #ffffff !important;
-}}
+/* Spinner 文字白色 */
 [data-testid="stSpinner"] p,
 [data-testid="stSpinner"] span,
-div.stSpinner span {{
-    color: #ffffff !important;
-}}
+div.stSpinner span {{ color: #ffffff !important; }}
 
-/* ── 固定底部控制栏 ── */
+/* 聊天区域底部留白（给底栏让位）*/
+.chat-pad {{ padding-bottom: 90px; }}
+
+/* 固定底部控制栏 */
 .fixed-footer {{
     position: fixed; bottom: 0; left: 0; width: 100%;
     background: rgba(5,12,28,0.90);
     backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
     border-top: 0.5px solid rgba(60,120,255,0.12);
-    padding: 10px 14px 16px;
+    padding: 10px 14px 18px;
     z-index: 1000;
 }}
 .footer-hint {{
@@ -209,7 +177,7 @@ div.stSpinner span {{
     margin-bottom: 6px; letter-spacing: 0.3px;
 }}
 
-/* ── 下拉框 ── */
+/* 下拉框 */
 div[data-baseweb="select"] > div {{
     border-radius: 9px !important;
     border-color: rgba(60,120,255,0.22) !important;
@@ -222,7 +190,7 @@ div[data-baseweb="select"] div {{
     color: rgba(140,185,255,0.8) !important;
 }}
 
-/* ── 发送按钮 ── */
+/* 发送按钮 */
 .stButton > button {{
     background: rgba(25,65,200,0.85) !important;
     color: #c8deff !important;
@@ -236,9 +204,6 @@ div[data-baseweb="select"] div {{
 .stButton > button:hover {{
     background: rgba(35,80,220,0.95) !important;
 }}
-
-/* ── 隐藏 Streamlit 默认 chat_message ── */
-[data-testid="stChatMessage"] {{ display: none !important; }}
 </style>
 
 <div class="fixed-header">
@@ -250,91 +215,49 @@ div[data-baseweb="select"] div {{
 </div>
 """, unsafe_allow_html=True)
 
-# ── Session State ──────────────────────────────────────────
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-
-# ── 页面主体 ──────────────────────────────────────────────
-st.markdown('<div class="page-body">', unsafe_allow_html=True)
-
-# ── Banner 区域（黄色框位置）────────────────────────────
+# ── Banner ─────────────────────────────────────────────────
 if BANNER_SRC:
     st.markdown(f"""
     <div class="banner-wrap">
-        <img src="{BANNER_SRC}" alt="Voice Research Banner"/>
+        <img src="{BANNER_SRC}" alt="banner"/>
         <div class="banner-overlay"></div>
         <div class="banner-label">Generative AI · Voice Analysis</div>
     </div>
     """, unsafe_allow_html=True)
-else:
+
+# ── Session State ──────────────────────────────────────────
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+# ── 聊天区：用原生 st.chat_message 渲染 ────────────────────
+st.markdown('<div class="chat-pad">', unsafe_allow_html=True)
+
+if not st.session_state.messages:
     st.markdown("""
-    <div class="banner-wrap" style="background:rgba(10,25,70,0.5);display:flex;align-items:center;justify-content:center;">
-        <span style="color:rgba(120,170,255,0.4);font-size:12px;">banner.png 未找到</span>
+    <div style="display:flex;flex-direction:column;align-items:center;
+                justify-content:center;height:140px;gap:8px;opacity:0.35;
+                margin-top:20px;">
+        <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
+            <circle cx="15" cy="15" r="11" stroke="rgba(100,160,255,0.7)" stroke-width="1"/>
+            <path d="M9 15 Q12 9 15 15 Q18 21 21 15"
+                  stroke="rgba(100,160,255,0.7)" stroke-width="1.2"
+                  fill="none" stroke-linecap="round"/>
+        </svg>
+        <span style="font-size:12px;color:rgba(120,170,255,0.7);">
+            请从下方选择问题开始交互
+        </span>
     </div>
     """, unsafe_allow_html=True)
 
-# ── 聊天可视化窗口（蓝色框位置）── 用自定义 HTML 渲染 ──────
-chat_html = '<div class="chat-scroll-wrap" id="chatWrap">'
-
-if not st.session_state.messages:
-    chat_html += """
-    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;
-                height:160px;gap:8px;opacity:0.4;">
-        <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-            <circle cx="16" cy="16" r="12" stroke="rgba(100,160,255,0.6)" stroke-width="1"/>
-            <path d="M10 16 Q13 10 16 16 Q19 22 22 16" stroke="rgba(100,160,255,0.6)"
-                  stroke-width="1.2" fill="none" stroke-linecap="round"/>
-        </svg>
-        <span style="font-size:12px;color:rgba(120,170,255,0.6);">请从下方选择问题开始交互</span>
-    </div>
-    """
-
 for msg in st.session_state.messages:
-    if msg["role"] == "user":
-        chat_html += f"""
-        <div class="bubble-user-wrap">
-            <div class="bubble-user">{msg["content"]}</div>
-        </div>
-        """
-    else:
-        chat_html += f"""
-        <div class="bubble-ai-wrap">
-            <div class="ai-dot">
-                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                    <circle cx="6.5" cy="6.5" r="5" stroke="rgba(100,160,255,0.55)" stroke-width="1"/>
-                    <circle cx="4.5" cy="6" r="0.7" fill="rgba(120,180,255,0.7)"/>
-                    <circle cx="8.5" cy="6" r="0.7" fill="rgba(120,180,255,0.7)"/>
-                    <path d="M4 8c.6.8 1.4 1.2 2.5 1.2s1.9-.4 2.5-1.2"
-                          stroke="rgba(100,160,255,0.55)" stroke-width="0.9"
-                          fill="none" stroke-linecap="round"/>
-                </svg>
-            </div>
-            <div class="bubble-ai-content">
-                <div class="bubble-ai">{msg["content"]}</div>
-            </div>
-        </div>
-        """
+    with st.chat_message(msg["role"]):
+        st.write(msg["content"])
+        if "audio" in msg:
+            st.audio(msg["audio"], format="audio/mp3")
 
-chat_html += '</div>'
-chat_html += """
-<script>
-(function() {
-    var el = document.getElementById('chatWrap');
-    if (el) el.scrollTop = el.scrollHeight;
-})();
-</script>
-"""
+st.markdown('</div>', unsafe_allow_html=True)
 
-st.markdown(chat_html, unsafe_allow_html=True)
-
-# 音频单独用 st.audio 渲染（必须走 Streamlit 组件）
-for msg in st.session_state.messages:
-    if msg["role"] == "assistant" and "audio" in msg:
-        st.audio(msg["audio"], format="audio/mp3")
-
-st.markdown('</div>', unsafe_allow_html=True)  # page-body
-
-# ── 底部固定区（红色框位置）────────────────────────────────
+# ── 底部固定控制栏 ─────────────────────────────────────────
 with st.container():
     st.markdown('<div class="fixed-footer">', unsafe_allow_html=True)
     st.markdown('<div class="footer-hint">选择问题后点击发送</div>', unsafe_allow_html=True)
