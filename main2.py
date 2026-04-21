@@ -104,22 +104,24 @@ header[data-testid="stHeader"] {{ display: none !important; }}
 /* 3. 中间对话滚动窗口 (自动填满中间区域，仅内部滚动) */
 .chat-scroll-wrap {{
     position: fixed; 
-    top: 214px; /* header(54) + banner(160) */
-    bottom: 85px; /* 留出底部发送区域高度 */
+    top: 214px; 
+    bottom: 105px; /* 【修改点】预留更多底部空间给增高的发送栏 */
     left: 0; width: 100%;
     overflow-y: auto; overflow-x: hidden;
     padding: 16px 14px; z-index: 800;
     display: flex; flex-direction: column; gap: 14px;
-    scrollbar-width: none; /* 隐藏原生滚动条变得更清爽 */
+    scrollbar-width: none; 
 }}
 .chat-scroll-wrap::-webkit-scrollbar {{ display: none; }}
 
 /* 4. 固定底部控制器 (拦截Streamlit布局，直接固定在底部) */
 div[data-testid="stHorizontalBlock"] {{
-    position: fixed; bottom: 0; left: 0; width: 100%; height: 85px;
+    position: fixed; bottom: 0; left: 0; width: 100%; 
+    height: 105px; /* 【修改点】增加整体高度 */
+    padding: 10px 14px 28px 14px; /* 【修改点】增加底部Padding(28px)，把控件往上顶，避开手机底部黑条 */
     background: rgba(5,12,28,0.98); z-index: 1000;
     border-top: 0.5px solid rgba(60,120,255,0.2);
-    padding: 15px 14px; display: flex; align-items: center; gap: 10px;
+    display: flex; align-items: center; gap: 10px;
 }}
 
 /* ── 样式细节定制 ── */
@@ -147,9 +149,15 @@ div[data-baseweb="select"] > div {{
     background: rgba(10,22,60,0.70) !important;
     border-color: rgba(60,120,255,0.3) !important; border-radius: 9px !important;
 }}
-div[data-baseweb="select"] span {{ color: rgba(140,185,255,0.9) !important; font-size: 13px !important; }}
+/* 【修改点】强制下拉框内的文字（包括选中项和箭头）变成白色 */
+div[data-baseweb="select"] span, 
+div[data-baseweb="select"] div {{ 
+    color: #ffffff !important; 
+    font-size: 13px !important; 
+}}
+
 .stButton > button {{
-    background: rgba(25,65,200,0.85) !important; color: #c8deff !important;
+    background: rgba(25,65,200,0.85) !important; color: #ffffff !important;
     border: 0.5px solid rgba(80,140,255,0.4) !important; border-radius: 9px !important;
     height: 42px !important; font-size: 14px !important; font-weight: 500 !important;
 }}
@@ -215,7 +223,7 @@ else:
                 </div>
             </div>
             '''
-# 注入自动滚动到最底部的JS
+# 注入自动滚动到最底部的JS（注意这里不能有缩进）
 chat_content += '''
 <script>
     var chatWrap = window.parent.document.getElementById('chatWrap');
