@@ -360,7 +360,7 @@ text-decoration:none; border-radius:8px; font-weight:bold; cursor:pointer;">
 ⚠️ 请注意
 </p>
 <p style="font-size:12px; color:rgba(180,210,255,0.8); margin-bottom: 12px; line-height: 1.6;">
-若您在微信中点击上方按钮无反应：<br>请点击屏幕右上角 <b>[...]</b> ，选择 <b>[在浏览器打开]</b> 即可无缝跳转。<br><br>您也可以长按复制下方链接，在手机浏览器中粘贴打开：
+若您在微信中点击上方按钮无反应：<br>请点击屏幕右上角 <b>[...]</b> ，选择 <b>[在浏览器打开]</b> 即可跳转。<br><br>您也可以长按复制下方链接，在手机浏览器中粘贴打开：
 </p>
 <p style="font-size:13px; color:#4dabff; font-weight: bold; user-select: all; -webkit-user-select: text; word-break: break-all; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 4px;">
 https://v.wjx.cn/vm/mlfbsK2.aspx
