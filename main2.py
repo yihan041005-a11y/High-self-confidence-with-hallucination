@@ -342,27 +342,27 @@ elif st.session_state.page == 2:
 
 
 # --- 第三页：问卷跳转 ---
-# --- 第三页：问卷跳转 ---
 elif st.session_state.page == 3:
-    # 修复：移除HTML多行字符串的前导缩进，防止被Streamlit渲染为Markdown代码块
     st.markdown("""
 <div class="scroll-wrap">
 <div style="text-align:center; padding-top:40px;">
 <p style="font-size:18px; color:white; font-weight:bold;">实验交互已完成</p>
 <p style="margin:20px 0; color:#c0d8ff;">请点击下方按钮进入问卷调查平台：</p>
 
-<a href="https://v.wjx.cn/vm/mlfbsK2.aspx" target="_top" rel="noopener noreferrer"
-onclick="window.top.location.href='https://v.wjx.cn/vm/mlfbsK2.aspx'; return false;"
+<a href="https://v.wjx.cn/vm/mlfbsK2.aspx" target="_self" rel="noopener noreferrer"
 style="display:inline-block; background:#1941c8; color:white; padding:12px 30px; 
 text-decoration:none; border-radius:8px; font-weight:bold; cursor:pointer;">
 进入问卷星填写评分
 </a>
 
 <div style="margin-top: 35px; padding: 15px; background: rgba(30,60,120,0.2); border-radius: 8px; border: 1px dashed rgba(60,120,255,0.3);">
-<p style="font-size:12px; color:rgba(180,210,255,0.7); margin-bottom: 8px; line-height: 1.5;">
-* 如果上方按钮点击无反应（被部分手机拦截），<br>请长按复制下方链接，并在微信或浏览器中打开：
+<p style="font-size:14px; color:#ff6b6b; margin-bottom: 10px; font-weight:bold;">
+⚠️ 微信安卓用户请注意
 </p>
-<p style="font-size:13px; color:#4dabff; font-weight: bold; user-select: all; -webkit-user-select: text;">
+<p style="font-size:12px; color:rgba(180,210,255,0.8); margin-bottom: 12px; line-height: 1.6;">
+由于微信限制，若点击上方按钮无反应：<br>请点击屏幕右上角 <b>[...]</b> ，选择 <b>[在浏览器打开]</b> 即可无缝跳转。<br><br>您也可以长按复制下方链接，在手机浏览器中粘贴打开：
+</p>
+<p style="font-size:13px; color:#4dabff; font-weight: bold; user-select: all; -webkit-user-select: text; word-break: break-all; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 4px;">
 https://v.wjx.cn/vm/mlfbsK2.aspx
 </p>
 </div>
