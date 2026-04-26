@@ -272,7 +272,7 @@ elif st.session_state.page == 2:
                     </div>
                 </div>'''
 
-        # 2. 如果存在 pending_question，说明用户刚发了问题，立刻渲染“正在加载中”气泡
+        # 2. 如果存在 pending_question，立刻渲染“正在加载中”气泡
         if st.session_state.pending_question:
             chat_html += '''
             <div class="bubble-ai-wrap">
@@ -306,19 +306,16 @@ elif st.session_state.page == 2:
         send_trigger = st.button("发送", use_container_width=True)
 
     # ========================================================
-    # 步骤一：触发发送，保存提问，并标记为 pending 状态，立即刷新页面
+    # 步骤一：触发发送，保存提问并标记 pending，立即刷新页面
     # ========================================================
     if send_trigger and selected_short != "请点击选择一个问题进行咨询...":
         long_question = SHORT_TO_LONG[selected_short]
-        # 存入用户问题
         st.session_state.messages.append({"role": "user", "content": long_question})
-        # 标记当前正在等待生成
         st.session_state.pending_question = long_question
-        # 立刻重载，让上方渲染出“正在加载中.....”
         st.rerun()
 
     # ========================================================
-    # 步骤二：页面重新载入后，展示了“正在加载中”，现在执行2秒等待并加载答案
+    # 步骤二：执行2秒等待并加载答案
     # ========================================================
     if st.session_state.pending_question:
         long_question = st.session_state.pending_question
@@ -333,32 +330,38 @@ elif st.session_state.page == 2:
             with open(audio_path, "rb") as f:
                 audio_b64 = base64.b64encode(f.read()).decode()
         
-        # 移除 pending 状态，追加正式回答
         st.session_state.pending_question = None
         st.session_state.messages.append({
             "role": "assistant", 
             "content": answer, 
             "audio_b64": audio_b64
         })
-        # 再次重载，用真实的文字和语音替换掉“正在加载中.....”
         st.rerun()
 
 
 # --- 第三页：问卷跳转 ---
 elif st.session_state.page == 3:
+    # 【安卓防拦截核心修复】：添加 rel 安全属性，并附带可长按复制的防死角备用链接
     st.markdown(f"""
     <div class="scroll-wrap">
         <div style="text-align:center; padding-top:40px;">
             <p style="font-size:18px; color:white; font-weight:bold;">实验交互已完成</p>
-            <p style="margin:20px 0; color:#c0d8ff;">请点击下方链接进入问卷调查平台：</p>
-            <a href="https://v.wjx.cn/vm/mlfbsK2.aspx" target="_top" 
+            <p style="margin:20px 0; color:#c0d8ff;">请点击下方按钮进入问卷调查平台：</p>
+            
+            <a href="https://v.wjx.cn/vm/mlfbsK2.aspx" target="_blank" rel="noopener noreferrer"
                style="display:inline-block; background:#1941c8; color:white; padding:12px 30px; 
                       text-decoration:none; border-radius:8px; font-weight:bold;">
                进入问卷星填写评分
             </a>
-            <p style="font-size:12px; color:rgba(180,210,255,0.4); margin-top:40px;">
-                * 提交问卷后即可关闭页面，感谢您的支持！
-            </p>
+            
+            <div style="margin-top: 35px; padding: 15px; background: rgba(30,60,120,0.2); border-radius: 8px; border: 1px dashed rgba(60,120,255,0.3);">
+                <p style="font-size:12px; color:rgba(180,210,255,0.7); margin-bottom: 8px; line-height: 1.5;">
+                    * 如果上方按钮点击无反应（被部分手机拦截），<br>请长按复制下方链接，并在微信或浏览器中打开：
+                </p>
+                <p style="font-size:13px; color:#4dabff; font-weight: bold; user-select: all; -webkit-user-select: text;">
+                    https://v.wjx.cn/vm/mlfbsK2.aspx
+                </p>
+            </div>
         </div>
     </div>
     """, unsafe_allow_html=True)
