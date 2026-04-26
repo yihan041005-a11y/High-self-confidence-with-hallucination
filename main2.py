@@ -42,6 +42,7 @@ if "messages" not in st.session_state:
 if "pending_question" not in st.session_state:
     st.session_state.pending_question = None
 
+
 # ── 读取 Banner 图片 (核心优化 1：使用 st.cache_data 极速读取内存) ──
 @st.cache_data
 def get_img_base64(path: str) -> str:
@@ -50,6 +51,7 @@ def get_img_base64(path: str) -> str:
             return base64.b64encode(f.read()).decode()
     except:
         return ""
+
 
 BANNER_B64 = get_img_base64("banner.png")
 BANNER_SRC = f"data:image/png;base64,{BANNER_B64}" if BANNER_B64 else ""
@@ -252,7 +254,7 @@ elif st.session_state.page == 2:
     # 聊天内容渲染（滚动区）
     # ========================================================
     chat_html = '<div class="scroll-wrap" id="chatWrap">'
-    
+
     if not st.session_state.messages and not st.session_state.pending_question:
         chat_html += '<div style="display:flex;align-items:center;justify-content:center;height:100%;opacity:0.4;font-size:13px;color:#c0d8ff;">请在底部选择问题发送</div>'
     else:
@@ -281,9 +283,9 @@ elif st.session_state.page == 2:
                     <div class="bubble-ai" style="color: #4dabff; font-weight: bold; font-style: italic;">正在加载中.....</div>
                 </div>
             </div>'''
-            
+
     chat_html += '</div>'
-    
+
     # 1.2倍速脚本注入
     chat_html += """
     <script>
@@ -293,7 +295,7 @@ elif st.session_state.page == 2:
         }
     </script>
     """
-    
+
     st.markdown(chat_html, unsafe_allow_html=True)
 
     # 底部对话控制器
@@ -321,7 +323,7 @@ elif st.session_state.page == 2:
         long_question = st.session_state.pending_question
         answer = SPECIFIC_RESPONSES[long_question]
         audio_path = AUDIO_MAPPING[long_question]
-        
+
         # 让页面在前端显示“正在加载中.....”保持 2 秒钟
         time.sleep(2)
 
@@ -329,42 +331,44 @@ elif st.session_state.page == 2:
         if os.path.exists(audio_path):
             with open(audio_path, "rb") as f:
                 audio_b64 = base64.b64encode(f.read()).decode()
-        
+
         st.session_state.pending_question = None
         st.session_state.messages.append({
-            "role": "assistant", 
-            "content": answer, 
+            "role": "assistant",
+            "content": answer,
             "audio_b64": audio_b64
         })
         st.rerun()
 
 
 # --- 第三页：问卷跳转 ---
+# --- 第三页：问卷跳转 ---
 elif st.session_state.page == 3:
-    # 【安卓防拦截核心修复】：添加 rel 安全属性，并附带可长按复制的防死角备用链接
-    st.markdown(f"""
-    <div class="scroll-wrap">
-        <div style="text-align:center; padding-top:40px;">
-            <p style="font-size:18px; color:white; font-weight:bold;">实验交互已完成</p>
-            <p style="margin:20px 0; color:#c0d8ff;">请点击下方按钮进入问卷调查平台：</p>
-            
-            <a href="https://v.wjx.cn/vm/mlfbsK2.aspx" target="_blank" rel="noopener noreferrer"
-               style="display:inline-block; background:#1941c8; color:white; padding:12px 30px; 
-                      text-decoration:none; border-radius:8px; font-weight:bold;">
-               进入问卷星填写评分
-            </a>
-            
-            <div style="margin-top: 35px; padding: 15px; background: rgba(30,60,120,0.2); border-radius: 8px; border: 1px dashed rgba(60,120,255,0.3);">
-                <p style="font-size:12px; color:rgba(180,210,255,0.7); margin-bottom: 8px; line-height: 1.5;">
-                    * 如果上方按钮点击无反应（被部分手机拦截），<br>请长按复制下方链接，并在微信或浏览器中打开：
-                </p>
-                <p style="font-size:13px; color:#4dabff; font-weight: bold; user-select: all; -webkit-user-select: text;">
-                    https://v.wjx.cn/vm/mlfbsK2.aspx
-                </p>
-            </div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+    # 修复：移除HTML多行字符串的前导缩进，防止被Streamlit渲染为Markdown代码块
+    st.markdown("""
+<div class="scroll-wrap">
+<div style="text-align:center; padding-top:40px;">
+<p style="font-size:18px; color:white; font-weight:bold;">实验交互已完成</p>
+<p style="margin:20px 0; color:#c0d8ff;">请点击下方按钮进入问卷调查平台：</p>
+
+<a href="https://v.wjx.cn/vm/mlfbsK2.aspx" target="_top" rel="noopener noreferrer"
+onclick="window.top.location.href='https://v.wjx.cn/vm/mlfbsK2.aspx'; return false;"
+style="display:inline-block; background:#1941c8; color:white; padding:12px 30px; 
+text-decoration:none; border-radius:8px; font-weight:bold; cursor:pointer;">
+进入问卷星填写评分
+</a>
+
+<div style="margin-top: 35px; padding: 15px; background: rgba(30,60,120,0.2); border-radius: 8px; border: 1px dashed rgba(60,120,255,0.3);">
+<p style="font-size:12px; color:rgba(180,210,255,0.7); margin-bottom: 8px; line-height: 1.5;">
+* 如果上方按钮点击无反应（被部分手机拦截），<br>请长按复制下方链接，并在微信或浏览器中打开：
+</p>
+<p style="font-size:13px; color:#4dabff; font-weight: bold; user-select: all; -webkit-user-select: text;">
+https://v.wjx.cn/vm/mlfbsK2.aspx
+</p>
+</div>
+</div>
+</div>
+""", unsafe_allow_html=True)
 
     _, col_back, _ = st.columns([0.2, 0.6, 0.2])
     with col_back:
